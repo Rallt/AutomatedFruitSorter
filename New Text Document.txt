@@ -1,0 +1,7 @@
+print(dataset.classes)
+print(dataset.class_to_idx)
+['freshapples", 'freshbanana", "freshoranges", 'rottenapples", 'rottenbanana", 'rottenoranges", unpipraapple, "unripe banana',
+"unripe orange']
+['freshapples: 0, freshbanana: 1, "freshoranges: 2, 'rottenapples': 3, 'rottenbanana": 4,
+"unripe apple. d
+'unripe banana': 7, 'unripe orange": 8}
