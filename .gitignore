@@ -1,0 +1,15 @@
+# Runtime SQLite data
+data/*.sqlite3
+data/*.sqlite3-shm
+data/*.sqlite3-wal
+data/frames/
+
+# Local configuration and IDE files
+.env
+.idea/
+dist/
+*.egg-info/
+
+# Python cache
+__pycache__/
+*.py[cod]

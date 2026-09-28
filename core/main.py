@@ -6,10 +6,11 @@ This file:
 """
 
 import logging
+from pathlib import Path
 
 import cv2
 
-import FruitStatusDetector
+from FruitClassifier import FruitClassifier
 from frameCapture import get_frames
 
 
@@ -27,24 +28,24 @@ def main():
     # Start capturing frames
     frames = get_frames()
 
-    # Load trained model
-    model = FruitStatusDetector.ImageClassifier(
-        r"C:\Users\TCFL\PycharmProjects\AutomatedFruitSorter\Fruit Ripeness V1.pth"
+    # Load the current Keras fruit/vegetable classifier.
+    root = Path(__file__).resolve().parents[1]
+    model = FruitClassifier(
+        str(root / "models" / "FruitClassifier.keras"),
+        str(root / "models" / "FruitClassifier.json"),
     )
 
     log("System started.")
 
     # Process each captured frame
     for frame in frames:
+        cv2.imshow("Camera", frame)
+        decision = model.predict(frame)
+        log(f"Decision: {decision}")
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
-
-
-        for frame in get_frames():
-            cv2.imshow("Camera", frame)
-            decision = model.predict(frame)
-            log(f"Decision: {decision}")
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

@@ -1,9 +1,22 @@
 [project]
 name = "automatedfruitsorter"
 version = "0.1.0"
-requires-python = ">=3.14"
+description = "Local camera-driven fruit classification and sorting dashboard"
+readme = "README.md"
+requires-python = ">=3.10"
 dependencies = [
-    "django>=6.1.1",
-    "fastapi>=0.141.1",
-    "uvicorn>=0.53.0",
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "opencv-python-headless>=4.10,<5.0",
+    "tensorflow>=2.16,<2.22",
 ]
+
+[project.scripts]
+fruit-sorter = "API.SERVE:run"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["API*", "core*"]

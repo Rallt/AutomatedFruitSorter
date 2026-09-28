@@ -4,16 +4,29 @@ using opencv to capture video frames and return each frame
 """
 
 
+import os
+from threading import Lock, Thread
+
 import cv2
-from threading import Thread, Lock
 
 
 frames = []
 lock = Lock()
 
 
-def capture_frames():
-    cap = cv2.VideoCapture(0)
+DEFAULT_CAMERA_URL = "http://10.11.222.250:8080/stream"
+
+
+def camera_source() -> str:
+    """Return the configured MJPEG camera URL.
+
+    Set ``FRUIT_SORTER_CAMERA_URL`` to point the sorter at a different camera.
+    """
+    return os.getenv("FRUIT_SORTER_CAMERA_URL", DEFAULT_CAMERA_URL)
+
+
+def capture_frames(source: str | None = None):
+    cap = cv2.VideoCapture(source or camera_source())
 
     try:
         while True:
@@ -29,8 +42,8 @@ def capture_frames():
         cap.release()
 
 
-def get_frames():
-    Thread(target=capture_frames, daemon=True).start()
+def get_frames(source: str | None = None):
+    Thread(target=capture_frames, args=(source,), daemon=True).start()
 
     while True:
         with lock:

@@ -1,0 +1,16 @@
+services:
+  fruit-sorter:
+    build: .
+    image: automated-fruit-sorter:latest
+    ports:
+      - "${FRUIT_SORTER_PORT:-8000}:8000"
+    environment:
+      FRUIT_SORTER_CAMERA_URL: ${FRUIT_SORTER_CAMERA_URL:?Set this to the camera MJPEG URL}
+      FRUIT_SORTER_DATA_DIR: /app/data
+      FRUIT_SORTER_FRAME_LIMIT: ${FRUIT_SORTER_FRAME_LIMIT:-500}
+    volumes:
+      - fruit_sorter_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  fruit_sorter_data:

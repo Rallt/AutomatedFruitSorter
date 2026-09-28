@@ -1,0 +1,10 @@
+.git
+.idea
+.venv
+__pycache__
+*.py[cod]
+.env
+data
+Documentation
+*.ipynb
+fruit_vegetable_classifier_model.keras

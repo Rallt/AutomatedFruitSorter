@@ -82,7 +82,8 @@ class ImageClassifier:
     def predict(self, image: np.ndarray) -> str:
         """Take an OpenCV image and return the predicted class."""
 
-        input_tensor = self.preprocess(image)
+        # OpenCV captures BGR, while the training transforms expect RGB.
+        input_tensor = self.preprocess(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
         with torch.no_grad():
             output = self.model(input_tensor)
