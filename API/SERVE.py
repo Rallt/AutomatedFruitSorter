@@ -23,7 +23,7 @@ from core.database import SorterDatabase
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CAMERA_URL = "http://10.11.222.250:8080/stream"
+DEFAULT_CAMERA_URL = "http://10.11.231.215:8080/stream"
 CAMERA_SOURCE = os.getenv("FRUIT_SORTER_CAMERA_URL", DEFAULT_CAMERA_URL)
 DATA_DIRECTORY = Path(os.getenv("FRUIT_SORTER_DATA_DIR", str(ROOT / "data"))).resolve()
 FRAME_DIRECTORY = DATA_DIRECTORY / "frames"
