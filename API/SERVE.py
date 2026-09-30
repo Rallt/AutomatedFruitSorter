@@ -122,6 +122,27 @@ class SorterRuntime:
         self.last_result = DATABASE.record(result, source, frame_path)
         self.total_sorted += 1
 
+    @staticmethod
+    def _annotate_frame(image, result: dict | None = None):
+        """Add a lightweight analysis-region overlay to the camera frame.
+
+        The current classifier is image-level only, so this marks the central
+        region used for analysis rather than claiming a model-generated box.
+        """
+        if cv2 is None or image is None:
+            return image
+        annotated = image.copy()
+        height, width = annotated.shape[:2]
+        left, top = int(width * 0.2), int(height * 0.15)
+        right, bottom = int(width * 0.8), int(height * 0.85)
+        cv2.rectangle(annotated, (left, top), (right, bottom), (40, 220, 120), 2)
+        cv2.line(annotated, (left, bottom + 8), (right, bottom + 8), (40, 220, 120), 2)
+        label = (result or {}).get("fruit") or "Analysing"
+        quality = (result or {}).get("quality") or ""
+        text = f"{label}  {quality}".strip()
+        cv2.putText(annotated, text, (left, max(24, top - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 220, 120), 2, cv2.LINE_AA)
+        return annotated
+
     def _run(self) -> None:
         if cv2 is None:
             with self.lock:
@@ -156,7 +177,7 @@ class SorterRuntime:
                 if self._inference_future and self._inference_future.done():
                     try:
                         result = self._format_result(self._inference_future.result())
-                        self._save_result(result, image=self._inference_future.image)
+                        self._save_result(result, image=self._annotate_frame(self._inference_future.image, result))
                     except Exception as exc:
                         with self.lock:
                             self.error = f"Prediction failed: {exc}"
@@ -167,7 +188,10 @@ class SorterRuntime:
                     future.image = inference_image
                     self._inference_future = future
                     last_inference = now
-                ok, encoded = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 75])
+                with self.lock:
+                    display_result = self.last_result
+                display_image = self._annotate_frame(image, display_result)
+                ok, encoded = cv2.imencode(".jpg", display_image, [cv2.IMWRITE_JPEG_QUALITY, 75])
                 if ok:
                     with self.lock:
                         self.frame = encoded.tobytes()
