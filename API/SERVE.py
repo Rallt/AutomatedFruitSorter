@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import argparse
+from concurrent.futures import Future, ThreadPoolExecutor
 import os
 import time
 from contextlib import asynccontextmanager
@@ -60,6 +61,8 @@ class SorterRuntime:
         self.started_at: float | None = None
         self._thread: Thread | None = None
         self._classifier: FruitClassifier | None = None
+        self._inference_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="fruit-inference")
+        self._inference_future: Future[str] | None = None
         self.last_result = {"label": "Waiting", "fruit": "—", "quality": "Waiting", "confidence": None, "frame_path": None}
         latest = DATABASE.latest_event()
         if latest:
@@ -82,6 +85,7 @@ class SorterRuntime:
     def join(self, timeout: float = 5) -> None:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=timeout)
+        self._inference_pool.shutdown(wait=False, cancel_futures=True)
 
     def _load_model(self) -> None:
         if not MODEL_PATH.exists():
@@ -125,6 +129,9 @@ class SorterRuntime:
                 self.running = False
             return
         cap = cv2.VideoCapture(CAMERA_SOURCE)
+        # Keep the newest frame available instead of allowing a network stream
+        # buffer to grow while the classifier is busy.
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         with self.lock:
             self.camera_available = cap.isOpened()
         if not cap.isOpened():
@@ -146,19 +153,25 @@ class SorterRuntime:
                         self.error = "Camera frame could not be read."
                     break
                 now = time.time()
-                if self._classifier and now - last_inference >= 0.7:
+                if self._inference_future and self._inference_future.done():
                     try:
-                        with self.lock:
-                            self._save_result(self._format_result(self._classifier.predict(image)), image=image)
+                        result = self._format_result(self._inference_future.result())
+                        self._save_result(result, image=self._inference_future.image)
                     except Exception as exc:
                         with self.lock:
                             self.error = f"Prediction failed: {exc}"
+                    self._inference_future = None
+                if self._classifier and self._inference_future is None and now - last_inference >= 0.7:
+                    inference_image = image.copy()
+                    future = self._inference_pool.submit(self._classifier.predict, inference_image)
+                    future.image = inference_image
+                    self._inference_future = future
                     last_inference = now
                 ok, encoded = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 75])
                 if ok:
                     with self.lock:
                         self.frame = encoded.tobytes()
-                time.sleep(0.02)
+                time.sleep(0.005)
         finally:
             cap.release()
             with self.lock:
