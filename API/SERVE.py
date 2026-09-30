@@ -61,6 +61,9 @@ class SorterRuntime:
         self.started_at: float | None = None
         self._thread: Thread | None = None
         self._classifier: FruitClassifier | None = None
+        self.model_enabled = True
+        self.inference_interval = 0.7
+        self.save_frames = True
         self._inference_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="fruit-inference")
         self._inference_future: Future[str] | None = None
         self.last_result = {"label": "Waiting", "fruit": "—", "quality": "Waiting", "confidence": None, "frame_path": None}
@@ -114,7 +117,7 @@ class SorterRuntime:
 
     def _save_result(self, result: dict, image=None, source: str = "camera") -> None:
         frame_path = None
-        if image is not None and cv2 is not None and FRAME_LIMIT > 0:
+        if image is not None and cv2 is not None and FRAME_LIMIT > 0 and self.save_frames:
             filename = f"event-{int(time.time() * 1000)}.jpg"
             if cv2.imwrite(str(FRAME_DIRECTORY / filename), image):
                 frame_path = filename
@@ -182,7 +185,7 @@ class SorterRuntime:
                         with self.lock:
                             self.error = f"Prediction failed: {exc}"
                     self._inference_future = None
-                if self._classifier and self._inference_future is None and now - last_inference >= 0.7:
+                if self.model_enabled and self._classifier and self._inference_future is None and now - last_inference >= self.inference_interval:
                     inference_image = image.copy()
                     future = self._inference_pool.submit(self._classifier.predict, inference_image)
                     future.image = inference_image
@@ -207,8 +210,23 @@ class SorterRuntime:
             uptime = int(time.time() - self.started_at) if self.running and self.started_at else 0
             return {"running": self.running, "camera_available": self.camera_available, "camera_source": CAMERA_SOURCE, "model_ready": self.model_ready, "error": self.error, "result": self.last_result, "total_sorted": self.total_sorted, "uptime_seconds": uptime, "report": DATABASE.report()}
 
+    def settings(self) -> dict:
+        with self.lock:
+            temperature = None
+            try:
+                temperature = round(int(Path('/sys/class/thermal/thermal_zone0/temp').read_text()) / 1000, 1)
+            except (OSError, ValueError):
+                pass
+            return {"model_enabled": self.model_enabled, "inference_interval": self.inference_interval, "save_frames": self.save_frames, "camera_source": CAMERA_SOURCE, "temperature_c": temperature, "model_ready": self.model_ready}
+
 
 runtime = SorterRuntime()
+
+
+class SettingsPayload(BaseModel):
+    model_enabled: bool | None = None
+    inference_interval: float | None = None
+    save_frames: bool | None = None
 
 
 @asynccontextmanager
@@ -244,6 +262,23 @@ async def readyz() -> dict:
 @app.get("/api/status")
 async def status() -> dict:
     return runtime.status()
+
+
+@app.get("/api/settings")
+async def settings() -> dict:
+    return runtime.settings()
+
+
+@app.post("/api/settings")
+async def update_settings(payload: SettingsPayload) -> dict:
+    with runtime.lock:
+        if payload.model_enabled is not None:
+            runtime.model_enabled = payload.model_enabled
+        if payload.inference_interval is not None:
+            runtime.inference_interval = max(0.2, min(payload.inference_interval, 10.0))
+        if payload.save_frames is not None:
+            runtime.save_frames = payload.save_frames
+    return runtime.settings()
 
 
 @app.get("/api/events")
