@@ -38,7 +38,7 @@ These endpoints are suitable for Docker, a reverse proxy, or an external monitor
 Use Python 3.10 or later and install the locked dependencies with `uv sync`, then run:
 
 ```sh
-uv run uvicorn API.SERVE:app --host 0.0.0.0 --port 8000
+uv run uvicorn API.SERVE:app --host 0.0.0.0 --port 8000 --no-access-log
 ```
 
 To start with a camera IP, use the included launcher:

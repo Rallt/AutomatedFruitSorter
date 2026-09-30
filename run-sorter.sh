@@ -17,4 +17,4 @@ else
 fi
 
 echo "Starting fruit sorter with camera: $FRUIT_SORTER_CAMERA_URL"
-exec uv run uvicorn API.SERVE:app --host 0.0.0.0 --port 8000
+exec uv run uvicorn API.SERVE:app --host 0.0.0.0 --port 8000 --no-access-log
