@@ -41,6 +41,15 @@ Use Python 3.10 or later and install the locked dependencies with `uv sync`, the
 uv run uvicorn API.SERVE:app --host 0.0.0.0 --port 8000
 ```
 
+To start with a camera IP, use the included launcher:
+
+```sh
+chmod +x run-sorter.sh
+./run-sorter.sh 10.11.221.17
+```
+
+It also accepts a full stream URL, such as `./run-sorter.sh http://10.11.221.17:8080/stream`.
+
 For a network-exposed installation, place the dashboard behind an authenticated HTTPS reverse proxy or restrict access to the trusted local network. The control endpoints intentionally start and stop physical processing, so they should not be exposed directly to the public internet.
 
 ## Raspberry Pi deployment
