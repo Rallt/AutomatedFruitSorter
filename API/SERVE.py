@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import argparse
 import os
 import time
 from contextlib import asynccontextmanager
@@ -273,4 +274,22 @@ def run() -> None:
     """Run the production HTTP server from the installed console script."""
     import uvicorn
 
+    parser = argparse.ArgumentParser(description="Run the Automated Fruit Sorter dashboard")
+    parser.add_argument(
+        "camera_ip",
+        nargs="?",
+        help="Camera IP or stream URL. An IP is expanded to http://IP:8080/stream.",
+    )
+    parser.add_argument(
+        "--camera-ip",
+        dest="camera_ip_option",
+        help="Camera IP or stream URL (named form).",
+    )
+    args = parser.parse_args()
+    camera = args.camera_ip_option or args.camera_ip
+    if camera:
+        if "://" not in camera:
+            camera = f"http://{camera}:8080/stream"
+        global CAMERA_SOURCE
+        CAMERA_SOURCE = camera
     uvicorn.run("API.SERVE:app", host="0.0.0.0", port=8000)

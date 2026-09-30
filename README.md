@@ -5,7 +5,7 @@ Local web dashboard and camera-driven classifier for a fruit-sorting station. It
 ## Deploy with Docker
 
 1. Install Docker Engine and Docker Compose on the machine that can reach the camera stream.
-2. Copy `.env.example` to `.env` and set `FRUIT_SORTER_CAMERA_URL` to the camera's MJPEG stream URL.
+2. Copy `.env.example` to `.env` and set `FRUIT_SORTER_CAMERA_URL` to the camera's MJPEG stream URL. When using the installed command, a camera IP can also be supplied at startup: `fruit-sorter 10.11.219.31` (or `fruit-sorter --camera-ip 10.11.219.31`).
 3. Start the service:
 
    ```sh
